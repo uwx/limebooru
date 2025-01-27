@@ -1,0 +1,59 @@
+generator kysely {
+  provider = "prisma-kysely"
+  // Optionally provide a destination directory for the generated file
+  // and a filename of your choice
+  output   = "../src/lib/server/db"
+  fileName = "types.ts"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:../main.db"
+}
+
+model Post {
+  id        Int     @id @default(autoincrement())
+  location  String
+  md5       String
+  sha1      String?
+  sha256    String?
+  /// @kyselyType('g' | 's' | 'q' | 'e')
+  rating    String  @default("g")
+  sourceUrl String?
+  pixivId   Int?
+  fileSize  Int     @default(0)
+
+  tags PostTag[]
+
+  @@index([location])
+  @@index([md5])
+}
+
+model PostTag {
+  postId Int
+  tagId  Int
+
+  post Post @relation(fields: [postId], references: [id])
+  tag  Tag  @relation(fields: [tagId], references: [id])
+
+  @@id([postId, tagId])
+}
+
+model Tag {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String? // wiki description
+  category    String  @default("general")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  posts PostTag[]
+
+  @@index([name])
+}
+
+model Config {
+  key   String  @id
+  value String?
+}
