@@ -12,48 +12,66 @@ datasource db {
 }
 
 model Post {
-  id        Int     @id @default(autoincrement())
-  location  String
-  md5       String
-  sha1      String?
-  sha256    String?
+  id                 Int     @id @default(autoincrement())
+  location           String
+  md5                String
+  sha1               String?
+  sha256             String?
   /// @kyselyType('g' | 's' | 'q' | 'e')
-  rating    String  @default("g")
-  sourceUrl String?
-  pixivId   Int?
-  fileSize  Int     @default(0)
+  rating             String  @default("g")
+  ratingAiConfidence Float?
+  sourceUrl          String?
+  pixivId            Int?
+  fileSize           Int     @default(0)
 
-  tags PostTag[]
+  tags        PostTag[]
+  aiTagStatus AiTagStatus?
 
   @@index([location])
   @@index([md5])
 }
 
 model PostTag {
-  postId Int
-  tagId  Int
+  postId       Int
+  tagId        Int
+  aiConfidence Float?
 
-  post Post @relation(fields: [postId], references: [id])
-  tag  Tag  @relation(fields: [tagId], references: [id])
+  post Post @relation(fields: [postId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onUpdate: Cascade, onDelete: Cascade)
 
   @@id([postId, tagId])
 }
 
 model Tag {
-  id          Int     @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   name        String
   description String? // wiki description
-  category    String  @default("general")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  /// @kyselyType('artist' | 'character' | 'copyright' | 'general' | 'meta')
+  category    String   @default("general")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+  /// @kyselyType('user' | 'bot' | 'ai')
+  tagger      String   @default("user")
 
   posts PostTag[]
 
   @@index([name])
 }
 
+model AiTagStatus {
+  postId     Int     @id @unique
+  /// @kyselyType(0 | 1)
+  isAiTagged Boolean @default(false)
+
+  post Post @relation(fields: [postId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+}
+
+model Thumbnail {
+  postId    Int   @id @unique
+  thumbnail Bytes
+}
+
 model Config {
-  key   String  @id
+  key   String  @id @unique
   value String?
 }

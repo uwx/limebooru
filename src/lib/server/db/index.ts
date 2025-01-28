@@ -1,4 +1,4 @@
-import { Kysely, SqliteDialect, sql } from 'kysely';
+import { Kysely, SqliteDialect, ParseJSONResultsPlugin, sql } from 'kysely';
 import SQLite from 'better-sqlite3';
 import type { DB } from './types.js';
 
@@ -6,6 +6,7 @@ export const db = new Kysely<DB>({
     dialect: new SqliteDialect({
         database: new SQLite('./main.db'),
     }),
+    plugins: [new ParseJSONResultsPlugin()],
     log(event) {
         if (event.level === 'error') {
             console.error(

@@ -24,3 +24,5 @@ vite.config.ts.timestamp-*
 
 main.db
 main.db-*
+*.onnx
+/images
