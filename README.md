@@ -1,38 +1,27 @@
-# sv
+# limebooru
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+Limebooru is an exceedingly simplistic booru clone written in SvelteKit. Unlike other boorus it's designed for a single
+user, uses a SQLite database to store all the data (thus not requiring database software to be run in the background);
+it also uses [WD ViT Tagger v3](https://huggingface.co/SmilingWolf/wd-vit-tagger-v3) via onnxruntime-node to tag images
+in lieu of manual tagging, and all the images are stored in a single folder.
 
-## Creating a project
+## Non-features (so far)
+- No user accounts
+- No image uploading (paste images into the `./images` folder instead)
+- No image deletion (delete images from the `./images` folder while the app is running instead)
+- No manual tag adding/removing, rating, setting Pixiv ID or source URL (maybe eventually)
 
-If you're seeing this, you've probably already done this step. Congrats!
-
-```bash
-# create a new project in the current directory
-npx sv create
-
-# create a new project in my-app
-npx sv create my-app
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+## Running
+Download [model.onnx](https://huggingface.co/SmilingWolf/wd-vit-tagger-v3/resolve/main/model.onnx) to
+`src/lib/server/ai-tagger/model.onnx`
 
 ```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+pnpm install
+pnpm dev
 ```
 
-## Building
+Then, paste images into the `./images` folder.
 
-To create a production version of your app:
+## License
 
-```bash
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+MIT
