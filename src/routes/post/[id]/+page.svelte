@@ -12,6 +12,12 @@
     <Row>
         <Col xs="2">
             <TagList tags={post.tags} />
+
+            <ul>
+                <li>Rating: {post.result.rating}</li>
+                <li>Source: {post.result.sourceUrl ?? 'N/A'}</li>
+                <li>Pixiv ID: {post.result.pixivId ?? 'N/A'}</li>
+            </ul>
         </Col>
         <Col>
             <picture>

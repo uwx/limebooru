@@ -62,8 +62,7 @@ export const router = t.router({
         }))
         .query(async ({ ctx, input }) => {
             let query = db
-                .selectFrom('Post')
-                .selectAll();
+                .selectFrom('Post');
 
             if (input.rating) {
                 query = query.where('rating', '==', input.rating);
@@ -92,12 +91,16 @@ export const router = t.router({
                 query = query.except(selectPostsByTag);
             }
 
-            const results = await query
-                // .select(eb => eb.fn.count<number>('Post.id').as('total'))
+            // TODO make this less stupid
+            const count = await query
+                .select(eb => eb.fn.count<number>('Post.id').as('total'))
+                .executeTakeFirst();
 
+            const results = await query
                 .orderBy(input.orderBy.field, input.orderBy.direction)
                 .offset(input.offset)
                 .limit(input.limit)
+                .selectAll()
                 .execute();
                 
             // include tags
@@ -131,7 +134,8 @@ export const router = t.router({
                     ...result,
                     ...postTags.find(e => e.id === result.id)!,
                 })),
-                tagPostCounts
+                tagPostCounts,
+                total: count?.total,
             };
         })
 });

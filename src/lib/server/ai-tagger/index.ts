@@ -38,11 +38,13 @@ export async function aiTagImage(image: { id: number, location: string }) {
                 .where('id', '==', image.id)
                 .execute();
 
-            const newRows = await trx
-                .insertInto('Tag')
-                .values(newTags.map(tag => ({ name: tag })))
-                .returningAll()
-                .execute();
+            const newRows = newTags.length > 0
+                ? await trx
+                    .insertInto('Tag')
+                    .values(newTags.map(tag => ({ name: tag })))
+                    .returningAll()
+                    .execute()
+                : [];
 
             console.log(newRows);
 

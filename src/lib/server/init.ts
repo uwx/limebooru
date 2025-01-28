@@ -6,6 +6,7 @@ import { createReadStream } from 'node:fs';
 import type { InsertObject } from 'kysely';
 import type { DB, Post } from './db/types';
 import { aiTagImage } from './ai-tagger';
+import { PubSub } from '$lib/pubsub';
 
 // This file is called on server init.
 function normalizeImageLocation(location: string) {
@@ -41,38 +42,46 @@ async function hashFile(location: string) {
     });
 }
 
+const pubSub = new PubSub<string>();
+
+pubSub.subscribe(async (path) => {
+    console.log('Newly added file', path, 'is being processed');
+
+    const location = normalizeImageLocation(path);
+
+    let postEntry = await db
+        .selectFrom('Post')
+        .select('id')
+        .where('location', '==', location)
+        .executeTakeFirst();
+
+    if (!postEntry) {
+        const value: InsertObject<DB, 'Post'> = {
+            location,
+            ...await hashFile(path),
+        };
+
+        const insertId = await db.insertInto('Post')
+            .values(value)
+            .onConflict(oc => oc
+                .column('id')
+                .doUpdateSet(value))
+            .executeTakeFirst()
+            .then(e => e.insertId);
+        
+        postEntry = { id: Number(insertId) };
+    }
+
+    await aiTagImage({ ...postEntry, location });
+});
+
 chokidar
     .watch('./images', {
     })
     .on('add', async (path) => {
         console.log('File', path, 'has been added');
 
-        const location = normalizeImageLocation(path);
-
-        let postEntry = await db
-            .selectFrom('Post')
-            .select('id')
-            .where('location', '==', location)
-            .executeTakeFirst();
-
-        if (!postEntry) {
-            const value: InsertObject<DB, 'Post'> = {
-                location,
-                ...await hashFile(path),
-            };
-
-            const insertId = await db.insertInto('Post')
-                .values(value)
-                .onConflict(oc => oc
-                    .column('id')
-                    .doUpdateSet(value))
-                .executeTakeFirst()
-                .then(e => e.insertId);
-            
-            postEntry = { id: Number(insertId) };
-        }
-
-        await aiTagImage({ ...postEntry, location });
+        pubSub.publish(path);
     })
     // .on('change', (path) => {
     //     console.log('File', path, 'has been changed');
