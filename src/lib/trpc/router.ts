@@ -137,7 +137,16 @@ export const router = t.router({
                 tagPostCounts,
                 total: count?.total,
             };
-        })
+        }),
+    deletePost: t.procedure
+        .input(z.number())
+        .mutation(async ({ ctx, input }) => {
+            const result = await db
+                .deleteFrom('Post')
+                .where('id', '==', input)
+                .executeTakeFirst();
+            return result.numDeletedRows > 0;
+        }),
 });
 
 export type Router = typeof router;

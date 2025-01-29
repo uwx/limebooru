@@ -1,11 +1,24 @@
 <script lang="ts">
     import { page } from "$app/state";
     import TagList from "$lib/components/TagList.svelte";
-    import { Col, Container, Row } from "@sveltestrap/sveltestrap";
+    import { Button, Col, Container, Row } from "@sveltestrap/sveltestrap";
 
     import type { PageProps } from './$types';
+    import { trpc } from "$lib/trpc/client";
+    import { goto } from "$app/navigation";
 
     let { data: post }: PageProps = $props();
+
+    async function deletePost() {
+        if (!confirm('Are you sure you want to delete this post?')) return;
+
+        const id = post.result.id;
+        if (await trpc(page).deletePost.mutate(id)) {
+            await goto('/');
+        } else {
+            alert('Could not delete post! Maybe it was already deleted?');
+        }
+    }
 </script>
 
 <Container fluid>
@@ -18,6 +31,8 @@
                 <li>Source: {post.result.sourceUrl ?? 'N/A'}</li>
                 <li>Pixiv ID: {post.result.pixivId ?? 'N/A'}</li>
             </ul>
+
+            <Button onclick={() => deletePost()}>Delete</Button>
         </Col>
         <Col>
             <picture>
