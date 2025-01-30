@@ -5,6 +5,8 @@ import { db } from '$lib/server/db';
 import { jsonArrayFrom } from 'kysely/helpers/sqlite';
 import type { ExpressionBuilder } from 'kysely';
 import type { DB } from '$lib/server/db/types';
+import { unlink } from 'node:fs/promises';
+import { getRealImagePath } from '$lib/server';
 
 export const t = initTRPC.context<Context>().create();
 
@@ -62,45 +64,35 @@ export const router = t.router({
         }))
         .query(async ({ ctx, input }) => {
             let query = db
-                .selectFrom('Post');
+                .selectFrom('Post')
 
             if (input.rating) {
                 query = query.where('rating', '==', input.rating);
             }
 
-            // nearly completely ripped from https://github.com/p4ckysm4cky/booru/blob/main/server/query.ts
-            if (input.positiveTags?.length) {
-                const selectPostsByTag = db
-                    .selectFrom('PostTag')
-                    .leftJoin('Tag', 'Tag.id', 'PostTag.tagId')
-                    .where('Tag.name', 'in', input.positiveTags)
-                    .rightJoin('Post', 'Post.id', 'PostTag.postId')
-                    .selectAll('Post');
-
-                query = query.intersect(selectPostsByTag);
+            if (input.positiveTags?.length || input.negativeTags?.length) {
+                // omit posts that have tags that are not in the positiveTags list
+                let query1 = query
+                    .innerJoin('PostTag', 'Post.id', 'PostTag.postId')
+                    .innerJoin('Tag', 'Tag.id', 'PostTag.tagId');
+                
+                if (input.positiveTags?.length)
+                    query1 = query1.where('Tag.name', 'in', input.positiveTags);
+                if (input.negativeTags?.length)
+                    query1 = query1.where('Tag.name', 'not in', input.negativeTags);
+                
+                query = query1;
             }
 
-            if (input.negativeTags?.length) {
-                const selectPostsByTag = db
-                    .selectFrom('PostTag')
-                    .leftJoin('Tag', 'Tag.id', 'PostTag.tagId')
-                    .where('Tag.name', 'in', input.negativeTags)
-                    .rightJoin('Post', 'Post.id', 'PostTag.postId')
-                    .selectAll('Post');
-
-                query = query.except(selectPostsByTag);
-            }
-
-            // TODO make this less stupid
             const count = await query
-                .select(eb => eb.fn.count<number>('Post.id').as('total'))
+                .select(eb => eb.fn.countAll<number>().over().as('total'))
                 .executeTakeFirst();
 
             const results = await query
                 .orderBy(input.orderBy.field, input.orderBy.direction)
                 .offset(input.offset)
                 .limit(input.limit)
-                .selectAll()
+                .selectAll('Post')
                 .execute();
                 
             // include tags
@@ -144,8 +136,15 @@ export const router = t.router({
             const result = await db
                 .deleteFrom('Post')
                 .where('id', '==', input)
+                .returning('Post.location')
                 .executeTakeFirst();
-            return result.numDeletedRows > 0;
+            
+            if (result?.location) {
+                await unlink(getRealImagePath(result.location));
+                return true;
+            }
+
+            return false;
         }),
 });
 
