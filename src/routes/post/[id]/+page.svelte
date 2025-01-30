@@ -19,6 +19,22 @@
             alert('Could not delete post! Maybe it was already deleted?');
         }
     }
+
+
+    function prettifyRating(rating: string) {
+        switch (rating) {
+            case 'g':
+                return 'General';
+            case 's':
+                return 'Safe';
+            case 'q':
+                return 'Questionable';
+            case 'e':
+                return 'Explicit';
+            default:
+                return 'Unknown';
+        }
+    }
 </script>
 
 <Container fluid>
@@ -27,7 +43,7 @@
             <TagList tags={post.tags} />
 
             <ul>
-                <li>Rating: {post.result.rating}</li>
+                <li>Rating: {prettifyRating(post.result.rating)}</li>
                 <li>Source: {post.result.sourceUrl ?? 'N/A'}</li>
                 <li>Pixiv ID: {post.result.pixivId ?? 'N/A'}</li>
             </ul>
