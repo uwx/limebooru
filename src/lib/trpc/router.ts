@@ -72,14 +72,21 @@ export const router = t.router({
 
             if (input.positiveTags?.length || input.negativeTags?.length) {
                 // omit posts that have tags that are not in the positiveTags list
-                let query1 = query
-                    .innerJoin('PostTag', 'Post.id', 'PostTag.postId')
-                    .innerJoin('Tag', 'Tag.id', 'PostTag.tagId');
-                
+                let query1 = query;
+
                 if (input.positiveTags?.length)
-                    query1 = query1.where('Tag.name', 'in', input.positiveTags);
+                    query1 = query1.where('Post.id', 'in', db
+                        .selectFrom('Tag')
+                        .where('Tag.name', 'in', input.negativeTags!)
+                        .innerJoin('PostTag', 'Tag.id', 'PostTag.tagId')
+                        .select('PostTag.postId'));
                 if (input.negativeTags?.length)
-                    query1 = query1.where('Tag.name', 'not in', input.negativeTags);
+                    query1 = query1.where('Post.id', 'not in', db
+                        .selectFrom('Tag')
+                        .where('Tag.name', 'in', input.negativeTags!)
+                        .innerJoin('PostTag', 'Tag.id', 'PostTag.tagId')
+                        .select('PostTag.postId')
+                    );
                 
                 query = query1;
             }
